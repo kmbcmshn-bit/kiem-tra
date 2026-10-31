@@ -1,0 +1,15 @@
+// Fallback and direct configuration for Firebase
+export const FIREBASE_CONFIG = {
+  projectId: "gen-lang-client-0811447780",
+  appId: "1:1043203384883:web:67a3c2e273fd3dd6d96546",
+  apiKey: "AIzaSyCZqo4JhfpTVKFPKC8WCsbauIq8kcFJXzI",
+  authDomain: "gen-lang-client-0811447780.firebaseapp.com",
+  firestoreDatabaseId: "ai-studio-lmsedusmartthcki-fe2789f9-d538-453f-8039-b08c3049b3d4",
+  storageBucket: "gen-lang-client-0811447780.firebasestorage.app",
+  messagingSenderId: "1043203384883",
+  measurementId: "",
+  oAuthClientId: "1043203384883-dmle3npdos98li41neniolpjvks70i5q.apps.googleusercontent.com",
+  recaptchaSiteKey: ""
+};
+
+export default FIREBASE_CONFIG;

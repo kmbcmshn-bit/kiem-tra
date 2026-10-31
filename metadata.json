@@ -1,0 +1,6 @@
+{
+  "name": "LMS EduSmart - Tự Học, Kiểm Tra Đa Mã Đề & AI Chấm Điểm",
+  "description": "Hệ thống quản lý học sinh tự học, kiểm tra đánh giá trực tuyến, tự động phát đa mã đề tương đương theo sĩ số và AI chấm tự luận.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

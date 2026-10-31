@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/* Textbook Mathematics & KaTeX Typography Optimization */
+.katex {
+  font-size: 1.16em !important;
+  text-rendering: optimizeLegibility;
+  font-family: KaTeX_Main, "Times New Roman", serif;
+  white-space: nowrap !important;
+}
+
+.katex-html {
+  white-space: nowrap !important;
+}
+
+.katex-display {
+  font-size: 1.25em !important;
+  margin: 0.85em 0 !important;
+  text-align: center;
+  white-space: normal !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.katex-wrapper {
+  display: inline-block;
+  line-height: 1.2;
+  vertical-align: -0.08em;
+  white-space: nowrap !important;
+}
+
+/* Ensure fractions have comfortable spacing */
+.katex .mfrac {
+  padding: 0 0.15em;
+}
+
+/* Print and High-resolution layout */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

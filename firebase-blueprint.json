@@ -1,0 +1,156 @@
+{
+  "entities": {
+    "ClassRoom": {
+      "title": "ClassRoom",
+      "description": "Information about a school class/grade group managed by teacher",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique class identifier" },
+        "name": { "type": "string", "description": "Name of the class e.g. 11A1" },
+        "grade": { "type": "string", "description": "Grade level e.g. Khối 11" },
+        "academicYear": { "type": "string", "description": "Academic school year" },
+        "schoolName": { "type": "string", "description": "School name" },
+        "description": { "type": "string", "description": "Class notes or description" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of creation" },
+        "studentCount": { "type": "number", "description": "Number of enrolled students" }
+      },
+      "required": ["id", "name", "grade", "academicYear"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student record with credentials and learning profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique student identifier" },
+        "name": { "type": "string", "description": "Full student name" },
+        "hoVaChuLot": { "type": "string", "description": "Surname and middle names" },
+        "ten": { "type": "string", "description": "First name" },
+        "studentCode": { "type": "string", "description": "vnEdu or school student code" },
+        "email": { "type": "string", "description": "Student email address" },
+        "username": { "type": "string", "description": "Unique student login username" },
+        "password": { "type": "string", "description": "Hashed or initial password" },
+        "isAccountActive": { "type": "boolean", "description": "Account activation status" },
+        "phone": { "type": "string", "description": "Contact phone number" },
+        "gender": { "type": "string", "description": "Gender identity" },
+        "dob": { "type": "string", "description": "Date of birth" },
+        "avatar": { "type": "string", "description": "Avatar URL" },
+        "level": { "type": "number", "description": "Gamification level" },
+        "badgeTitle": { "type": "string", "description": "Earned badge title" },
+        "xp": { "type": "number", "description": "Experience points" },
+        "xpToNextLevel": { "type": "number", "description": "XP needed for next level" },
+        "completionPercent": { "type": "number", "description": "Course completion rate" },
+        "streakDays": { "type": "number", "description": "Consecutive study streak days" },
+        "rank": { "type": "number", "description": "Leaderboard rank" },
+        "classId": { "type": "string", "description": "Foreign key pointing to ClassRoom" },
+        "className": { "type": "string", "description": "Denormalized class name" }
+      },
+      "required": ["id", "name", "classId"]
+    },
+    "Exam": {
+      "title": "Exam",
+      "description": "Test paper matrix or exam created by teacher for students",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique exam ID" },
+        "title": { "type": "string", "description": "Exam title" },
+        "subject": { "type": "string", "description": "Subject e.g. Toán học" },
+        "grade": { "type": "string", "description": "Grade level" },
+        "durationMinutes": { "type": "number", "description": "Exam time limit in minutes" },
+        "totalQuestions": { "type": "number", "description": "Total question count" },
+        "instructions": { "type": "string", "description": "Exam guidelines and rules" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "isOnline": { "type": "boolean", "description": "Active for student access" },
+        "shuffleQuestions": { "type": "boolean", "description": "Randomize question order" },
+        "allowReview": { "type": "boolean", "description": "Allow students to view results" },
+        "showDetailedExplanation": { "type": "boolean", "description": "Show explanations" }
+      },
+      "required": ["id", "title", "subject", "durationMinutes"]
+    },
+    "Submission": {
+      "title": "Submission",
+      "description": "Student exam answer sheet and grading submission",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique submission ID" },
+        "examId": { "type": "string", "description": "Associated Exam ID" },
+        "studentId": { "type": "string", "description": "Student who submitted" },
+        "studentName": { "type": "string", "description": "Student full name" },
+        "className": { "type": "string", "description": "Student class name" },
+        "variantCode": { "type": "string", "description": "Exam paper variant code" },
+        "startTime": { "type": "string", "description": "Exam start timestamp" },
+        "submitTime": { "type": "string", "description": "Exam submission timestamp" },
+        "score": { "type": "number", "description": "Score achieved out of 10" },
+        "maxScore": { "type": "number", "description": "Maximum possible score" },
+        "percentage": { "type": "number", "description": "Score percentage" },
+        "feedback": { "type": "string", "description": "Automated AI feedback" },
+        "violationsCount": { "type": "number", "description": "Anti-cheat violations logged" },
+        "complaintId": { "type": "string", "description": "Optional score appeal ID" },
+        "complaintStatus": { "type": "string", "description": "Status of appeal" },
+        "teacherReviewNotes": { "type": "string", "description": "Teacher remarks on score adjustment" }
+      },
+      "required": ["id", "examId", "studentId", "score"]
+    },
+    "ExamComplaint": {
+      "title": "ExamComplaint",
+      "description": "Student dispute or grade review request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique complaint ID" },
+        "examId": { "type": "string", "description": "Associated Exam ID" },
+        "studentId": { "type": "string", "description": "Student filing appeal" },
+        "studentName": { "type": "string", "description": "Student name" },
+        "className": { "type": "string", "description": "Class name" },
+        "questionIndex": { "type": "number", "description": "Question number contested" },
+        "reason": { "type": "string", "description": "Reason category" },
+        "studentExplanation": { "type": "string", "description": "Student explanation" },
+        "status": { "type": "string", "description": "Status: pending | accepted | rejected" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "teacherResponse": { "type": "string", "description": "Teacher reply" },
+        "resolvedAt": { "type": "string", "description": "Resolution timestamp" }
+      },
+      "required": ["id", "examId", "studentId", "status"]
+    },
+    "TeacherProfile": {
+      "title": "TeacherProfile",
+      "description": "Teacher admin account and school information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique teacher ID" },
+        "name": { "type": "string", "description": "Teacher name" },
+        "email": { "type": "string", "description": "Teacher email address" },
+        "phone": { "type": "string", "description": "Teacher phone number" },
+        "schoolName": { "type": "string", "description": "School where teacher teaches" },
+        "subject": { "type": "string", "description": "Subject taught" },
+        "avatar": { "type": "string", "description": "Profile picture URL" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["id", "name", "email"]
+    }
+  },
+  "firestore": {
+    "/classes/{classId}": {
+      "schema": "ClassRoom",
+      "description": "Classrooms managed by educators"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Enrolled student records and credentials"
+    },
+    "/exams/{examId}": {
+      "schema": "Exam",
+      "description": "Exams, question banks and variants created by teachers"
+    },
+    "/submissions/{submissionId}": {
+      "schema": "Submission",
+      "description": "Student exam submissions and grading history"
+    },
+    "/complaints/{complaintId}": {
+      "schema": "ExamComplaint",
+      "description": "Grade disputes and score review tickets"
+    },
+    "/teacherProfiles/{profileId}": {
+      "schema": "TeacherProfile",
+      "description": "Teacher user profiles and settings"
+    }
+  }
+}
