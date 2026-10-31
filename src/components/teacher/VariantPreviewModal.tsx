@@ -271,7 +271,9 @@ export const VariantPreviewModal: React.FC<VariantPreviewModalProps> = ({
                                 ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
                                 : partInfo.partNumber === 2
                                 ? 'bg-sky-50 border-sky-200 text-sky-950'
-                                : 'bg-amber-50 border-amber-200 text-amber-950'
+                                : partInfo.partNumber === 3
+                                ? 'bg-amber-50 border-amber-200 text-amber-950'
+                                : 'bg-purple-50 border-purple-200 text-purple-950'
                             }`}
                           >
                             <div className="flex items-center gap-2">
@@ -281,7 +283,9 @@ export const VariantPreviewModal: React.FC<VariantPreviewModalProps> = ({
                                     ? 'bg-emerald-700'
                                     : partInfo.partNumber === 2
                                     ? 'bg-sky-700'
-                                    : 'bg-amber-700'
+                                    : partInfo.partNumber === 3
+                                    ? 'bg-amber-700'
+                                    : 'bg-purple-700'
                                 }`}
                               >
                                 {partInfo.partRoman}
@@ -293,7 +297,9 @@ export const VariantPreviewModal: React.FC<VariantPreviewModalProps> = ({
                                 ? 'Trắc nghiệm 4 lựa chọn'
                                 : partInfo.partNumber === 2
                                 ? 'Trắc nghiệm Đúng / Sai'
-                                : 'Trả lời ngắn / Tự luận'}
+                                : partInfo.partNumber === 3
+                                ? 'Trả lời ngắn'
+                                : 'Tự luận viết tay'}
                             </span>
                           </div>
                         )}

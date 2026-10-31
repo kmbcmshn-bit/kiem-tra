@@ -16,12 +16,12 @@ export interface GenerateExamOptions {
  * - Phần III: Trắc nghiệm trả lời ngắn (điền số) hoặc Tự luận (làm bài trên giấy chụp ảnh nộp)
  */
 export function getQuestionPartInfo(q: ExamQuestion, index: number = 0): {
-  partNumber: 1 | 2 | 3;
-  partRoman: 'Phần I' | 'Phần II' | 'Phần III';
+  partNumber: 1 | 2 | 3 | 4;
+  partRoman: 'Phần I' | 'Phần II' | 'Phần III' | 'Phần IV';
   partTitle: string;
   partDescription: string;
 } {
-  if (q.partNumber === 1 || q.type === 'multiple_choice') {
+  if (q.partNumber === 1 || (!q.partNumber && q.type === 'multiple_choice')) {
     return {
       partNumber: 1,
       partRoman: 'Phần I',
@@ -30,12 +30,38 @@ export function getQuestionPartInfo(q: ExamQuestion, index: number = 0): {
     };
   }
 
-  if (q.partNumber === 2 || q.type === 'true_false') {
+  if (q.partNumber === 2 || (!q.partNumber && q.type === 'true_false')) {
     return {
       partNumber: 2,
       partRoman: 'Phần II',
       partTitle: 'PHẦN II. CÂU HỎI TRẮC NGHIỆM ĐÚNG / SAI',
       partDescription: 'Thí sinh trả lời từ các câu hỏi trắc nghiệm Đúng/Sai. Trong mỗi câu hỏi, thí sinh chọn Đúng hoặc Sai cho từng ý a), b), c), d).',
+    };
+  }
+
+  if (q.partNumber === 3) {
+    if (q.type === 'essay') {
+      return {
+        partNumber: 3,
+        partRoman: 'Phần III',
+        partTitle: 'PHẦN III. CÂU HỎI TỰ LUẬN',
+        partDescription: 'Thí sinh giải chi tiết các bước trên giấy rồi chụp ảnh bài làm để tải lên nộp.',
+      };
+    }
+    return {
+      partNumber: 3,
+      partRoman: 'Phần III',
+      partTitle: 'PHẦN III. CÂU HỎI TRẢ LỜI NGẮN',
+      partDescription: 'Thí sinh điền kết quả vào ô trả lời ngắn (số nguyên hoặc số thập phân/phân số gọn).',
+    };
+  }
+
+  if (q.partNumber === 4 || q.type === 'essay') {
+    return {
+      partNumber: 4,
+      partRoman: 'Phần IV',
+      partTitle: 'PHẦN IV. CÂU HỎI TỰ LUẬN',
+      partDescription: 'Thí sinh giải chi tiết các bước trên giấy rồi chụp ảnh bài làm để tải lên nộp.',
     };
   }
 
@@ -48,29 +74,31 @@ export function getQuestionPartInfo(q: ExamQuestion, index: number = 0): {
 }
 
 /**
- * Builds the strict prompt ensuring Gemini adheres 100% to the 3-part matrix
+ * Builds the strict prompt ensuring Gemini adheres 100% to the matrix and extracted questions
  */
 export function buildStrictMatrixPrompt(
   matrixContent: string,
   fileName: string,
   extraInstruction?: string
 ): string {
-  return `CHỈ THỊ BIÊN SOẠN ĐỀ THI BÁM SÁT 100% THEO FILE MA TRẬN ĐÃ NẠP (CHUẨN 3 PHẦN GDPT 2018):
-Tệp ma trận nguồn: "${fileName}".
-NỘI DUNG MA TRẬN BÓC TÁCH:
+  return `CHỈ THỊ BIÊN SOẠN ĐỀ THI BÁM SÁT 100% THEO FILE NẠP (CHUẨN 3 HOẶC 4 PHẦN GDPT 2018):
+Tệp nguồn: "${fileName}".
+NỘI DUNG TỆP NGUỒN:
 """
 ${matrixContent}
 """
 
 ${extraInstruction ? `YÊU CẦU BỔ SUNG TỪ GIÁO VIÊN: ${extraInstruction}\n` : ''}
 NGUYÊN TẮC BẮT BUỘC NGHIÊM NGẶT:
-1. ĐỀ THI PHẢI THỂ HIỆN ĐẦY ĐỦ 3 PHẦN RIÊNG BIỆT theo quy định đề thi tốt nghiệp GDPT 2018:
-   - PHẦN I: Câu hỏi Trắc nghiệm nhiều phương án lựa chọn (type: "multiple_choice", gồm 4 phương án A, B, C, D; chọn 1 đáp án đúng).
-   - PHẦN II: Câu hỏi Trắc nghiệm Đúng / Sai (type: "true_false", mỗi câu hỏi gồm 4 ý a, b, c, d - mỗi ý có correctAnswer là true (Đúng) hoặc false (Sai)).
-   - PHẦN III: Câu hỏi Trả lời ngắn (type: "short_answer") hoặc Tự luận (type: "essay" - học sinh làm bài giải trên giấy rồi chụp ảnh nộp bài).
-2. Toàn bộ các công thức toán, hàm số, phương trình, tập xác định, tọa độ PHẢI được định dạng trong dấu $...$ chuẩn LaTeX (ví dụ: $y = f(x)$, $f'(x) = 0$, $D = [0; 2]$, $\\vec{u} = (1; -2; 3)$) để hiển thị chuẩn mực SGK.
-3. Tổng điểm toàn bài phải đúng 10.0 điểm.
-4. Nghiệm số và dữ liệu bài toán phải là số đẹp, chuẩn kiến thức SGK.`;
+1. ĐỀ THI PHẢI THỂ HIỆN ĐÚNG CẤU TRÚC (3 PHẦN HOẶC 4 PHẦN) theo chuẩn đề thi GDPT 2018:
+   - PHẦN I: Câu hỏi Trắc nghiệm nhiều phương án lựa chọn (type: "multiple_choice", partNumber: 1, 4 phương án A, B, C, D; chọn 1 đáp án đúng).
+   - PHẦN II: Câu hỏi Trắc nghiệm Đúng / Sai (type: "true_false", partNumber: 2, mỗi câu gồm 4 ý a, b, c, d - mỗi ý có correctAnswer là true hoặc false).
+   - PHẦN III: Câu hỏi Trả lời ngắn (type: "short_answer", partNumber: 3, điền số hoặc phân số gọn).
+   - PHẦN IV: Câu hỏi Tự luận (type: "essay", partNumber: 4, hoặc gộp vào Phần III nếu đề thi 3 phần - học sinh làm bài giải trên giấy rồi chụp ảnh nộp bài).
+2. NẾU TRONG TỆP ĐÃ CÓ SẴN CÂU HỎI: Bắt buộc phải trích xuất chính xác 100% nội dung câu hỏi, phương án và đáp án từ tệp của giáo viên.
+3. Toàn bộ các công thức toán, hàm số, phương trình, tập xác định, tọa độ PHẢI được định dạng trong dấu $...$ chuẩn LaTeX (ví dụ: $y = f(x)$, $f'(x) = 0$, $D = [0; 2]$, $\\vec{u} = (1; -2; 3)$) để hiển thị chuẩn mực SGK.
+4. Tổng điểm toàn bài phải đúng 10.0 điểm.
+5. Nghiệm số và dữ liệu bài toán phải là số đẹp, chuẩn kiến thức SGK.`;
 }
 
 /**

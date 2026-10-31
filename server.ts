@@ -2,7 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 
@@ -63,11 +63,11 @@ function safeJsonParse(text: string): any {
 /**
  * Robust Gemini model caller with cascade:
  * Uses gemini-3.8-flash (primary, high capability),
- * falls back to gemini-3.5-flash-lite.
+ * falls back to gemini-3.1-flash-lite.
  */
 async function callGemini(contents: any, config?: any) {
   if (!ai) throw new Error('Gemini API client not initialized');
-  const models = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
+  const models = ['gemini-3.8-flash', 'gemini-3.1-flash-lite'];
   let lastErr: any = null;
 
   // Format contents for @google/genai SDK
@@ -81,11 +81,26 @@ async function callGemini(contents: any, config?: any) {
 
   for (const model of models) {
     try {
-      const response = await ai.models.generateContent({
+      const mergedConfig = {
+        ...config,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+      };
+      // Delete deprecated temperature if passed
+      if ('temperature' in mergedConfig) {
+        delete (mergedConfig as any).temperature;
+      }
+
+      const responsePromise = ai.models.generateContent({
         model,
         contents: formattedContents,
-        config: config || { responseMimeType: 'application/json' },
+        config: mergedConfig,
       });
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Timeout after 20s on model ${model}`)), 20000)
+      );
+
+      const response: any = await Promise.race([responsePromise, timeoutPromise]);
       if (response && response.text) {
         return response;
       }
@@ -796,36 +811,40 @@ app.post('/api/gemini/parse-matrix-file', async (req, res) => {
           });
         }
 
-        const instructionText = `CHỈ THỊ BIÊN SOẠN ĐỀ THI BÁM SÁT 100% THEO FILE MA TRẬN (CHUẨN 3 PHẦN GDPT 2018):
-Tệp ma trận đã nạp: "${fileName || 'tai_lieu'}".
-${fileText ? `NỘI DUNG MA TRẬN ĐÃ BÓC TÁCH TỪ FILE:\n"""\n${fileText}\n"""\n` : ''}
+        const instructionText = `CHỈ THỊ BIÊN SOẠN / TRÍCH XUẤT ĐỀ THI BÁM SÁT 100% THEO FILE ĐÃ NẠP (CHUẨN GDPT 2018):
+Tệp nguồn đã nạp: "${fileName || 'tai_lieu'}".
+${fileText ? `NỘI DUNG VĂN BẢN TRÍCH XUẤT TỪ FILE:\n"""\n${fileText}\n"""\n` : ''}
 ${promptInstruction ? `YÊU CẦU BỔ SUNG CỦA GIÁO VIÊN: ${promptInstruction}\n` : ''}
 
 NGUYÊN TẮC BẮT BUỘC NGHIÊM NGẶT:
-1. ĐỀ THI BẮT BUỘC PHẢI THỂ HIỆN RÕ RÀNG 3 PHẦN RIÊNG BIỆT:
-   - PHẦN I: Câu hỏi Trắc nghiệm nhiều phương án lựa chọn (type: "multiple_choice", gồm 4 phương án A, B, C, D; chọn 1 đáp án).
-   - PHẦN II: Câu hỏi Trắc nghiệm Đúng / Sai (type: "true_false", mỗi câu gồm 4 ý a, b, c, d; mỗi ý chọn Đúng hoặc Sai).
-   - PHẦN III: Câu hỏi Trả lời ngắn (type: "short_answer") hoặc Tự luận (type: "essay" - học sinh làm bài trên giấy rồi chụp ảnh nộp bài).
-2. Toàn bộ các công thức toán, hàm số, phương trình, lượng giác, phân số, căn thức PHẢI được định dạng trong dấu $...$ chuẩn LaTeX (ví dụ: $\\tan a = 3$, $0 < a < \\frac{\\pi}{2}$, $\\cot a = \\frac{1}{3}$, $\\sin a = \\frac{3}{\\sqrt{10}}$, $2\\cos x - 1 = 0$, $y = x^3 - 3x^2 + 2$, $y = \\frac{2x - 1}{x + 1}$, $f'(x) = 0$, $[0; 2]$) để hiển thị chuẩn mực SGK.
-3. Tổng điểm toàn bài phải đúng 10.0 điểm.
-4. Nghiệm số và dữ liệu bài toán phải là số đẹp, sư phạm, chuẩn kiến thức GDPT 2018.
+1. NHẬN DIỆN ĐÚNG KHỐI LỚP (Toán 10, Toán 11, Toán 12) từ tên file và nội dung đề cương/ma trận.
+2. TRÍCH XUẤT CÂU HỎI THẬT:
+   - Nếu trong tệp đã có sẵn các câu hỏi kiểm tra, đề thi hoặc câu hỏi ôn tập: BẮT BUỘC trích xuất 100% nguyên văn các câu hỏi, các phương án A, B, C, D, các ý Đúng/Sai a, b, c, d, đáp số câu trả lời ngắn và câu tự luận.
+   - Nếu tệp là bảng ma trận đặc tả: Bắt buộc biên soạn các câu hỏi bám sát 100% chuyên đề của khối lớp đó (ví dụ: Toán 11 gồm Lượng giác, Cấp số cộng, Giới hạn, Hình không gian song song/vuông góc, Xác suất; Toán 12 gồm Khảo sát hàm số, Vectơ Oxyz, Số liệu ghép nhóm, Tích phân; Toán 10 gồm Mệnh đề, Hàm bậc hai, Hệ thức lượng, Vectơ).
+3. HỖ TRỢ CẤU TRÚC 3 PHẦN HOẶC ĐỦ 4 PHẦN:
+   - PHẦN I: Câu hỏi Trắc nghiệm nhiều phương án (type: "multiple_choice", partNumber: 1, 4 lựa chọn A, B, C, D, chọn 1 đáp án).
+   - PHẦN II: Câu hỏi Trắc nghiệm Đúng / Sai (type: "true_false", partNumber: 2, mỗi câu gồm 4 ý a, b, c, d có correctAnswer: true/false).
+   - PHẦN III: Câu hỏi Trả lời ngắn (type: "short_answer", partNumber: 3, điền số hoặc phân số gọn).
+   - PHẦN IV: Câu hỏi Tự luận (type: "essay", partNumber: 4, hoặc gộp vào Phần III nếu đề thi 3 phần - học sinh làm bài trên giấy rồi chụp ảnh nộp bài).
+4. ĐỊNH DẠNG TOÁN HỌC CHUẨN LATEX (BẮT BUỘC): Toàn bộ công thức toán, hàm số, phương trình, lượng giác, phân số, căn thức PHẢI được đặt trong cặp dấu $...$ (ví dụ: $\\tan x = 1$, $u_1 = 3$, $d = 2$, $\\lim_{n \\to +\\infty} \\frac{2n+1}{n-3}$, $y = x^3 - 3x^2 + 2$, $\\vec{u} = (1; 2; -1)$) để hiển thị chuẩn mực SGK.
+5. Tổng điểm toàn bài phải đúng 10.0 điểm.
 
 Trả về DUY NHẤT một JSON hợp lệ:
 {
-  "title": "Đề thi Toán bám sát ma trận: ${fileName ? fileName.replace(/\\.[^/.]+$/, '') : 'Kiểm tra'}",
-  "subject": "Toán học 12",
+  "title": "Tên bài kiểm tra bám sát tệp đã nạp",
+  "subject": "Toán học (kèm khối lớp 10, 11 hoặc 12)",
   "gradeColumn": "DTX1",
-  "durationMinutes": 25,
+  "durationMinutes": 45,
   "totalPoints": 10.0,
   "questions": [
     {
       "id": "q1",
       "type": "multiple_choice",
       "partNumber": 1,
-      "content": "Nội dung câu hỏi theo chuyên đề ma trận...",
+      "content": "Nội dung câu hỏi Phần I...",
       "options": ["A. $...$", "B. $...$", "C. $...$", "D. $...$"],
       "correctAnswer": 0,
-      "points": 1.5,
+      "points": 0.5,
       "difficulty": "NB",
       "explanation": "Lời giải chi tiết..."
     },
@@ -833,35 +852,35 @@ Trả về DUY NHẤT một JSON hợp lệ:
       "id": "q2",
       "type": "true_false",
       "partNumber": 2,
-      "content": "Nội dung câu hỏi Đúng/Sai theo ma trận... Xét tính đúng sai của các khẳng định sau:",
-      "points": 4.0,
+      "content": "Nội dung câu hỏi Đúng/Sai Phần II... Xét tính đúng sai của các mệnh đề sau:",
+      "points": 2.0,
       "difficulty": "TH",
       "trueFalseItems": [
-        { "id": "a", "label": "a)", "content": "Khẳng định 1...", "correctAnswer": true },
-        { "id": "b", "label": "b)", "content": "Khẳng định 2...", "correctAnswer": false },
-        { "id": "c", "label": "c)", "content": "Khẳng định 3...", "correctAnswer": true },
-        { "id": "d", "label": "d)", "content": "Khẳng định 4...", "correctAnswer": true }
+        { "id": "a", "label": "a)", "content": "Mệnh đề 1...", "correctAnswer": true },
+        { "id": "b", "label": "b)", "content": "Mệnh đề 2...", "correctAnswer": false },
+        { "id": "c", "label": "c)", "content": "Mệnh đề 3...", "correctAnswer": true },
+        { "id": "d", "label": "d)", "content": "Mệnh đề 4...", "correctAnswer": false }
       ],
-      "explanation": "Giải thích chi tiết 4 ý a, b, c, d..."
+      "explanation": "Giải thích chi tiết 4 ý..."
     },
     {
       "id": "q3",
       "type": "short_answer",
       "partNumber": 3,
-      "content": "Nội dung câu hỏi ngắn theo ma trận...",
-      "correctAnswerText": "5",
-      "points": 2.0,
+      "content": "Nội dung câu hỏi Trả lời ngắn Phần III...",
+      "correctAnswerText": "4",
+      "points": 1.0,
       "difficulty": "VD",
-      "explanation": "Lời giải..."
+      "explanation": "Lời giải chi tiết..."
     },
     {
       "id": "q4",
       "type": "essay",
-      "partNumber": 3,
-      "content": "Nội dung bài tự luận theo đúng chuyên đề của ma trận (học sinh làm trên giấy chụp ảnh nộp)...",
-      "points": 2.5,
+      "partNumber": 4,
+      "content": "Nội dung bài toán Tự luận Phần IV (học sinh giải trên giấy chụp ảnh nộp)...",
+      "points": 2.0,
       "difficulty": "VDC",
-      "rubric": "Barem chấm chi tiết theo từng bước..."
+      "rubric": "Barem điểm chi tiết..."
     }
   ]
 }
@@ -871,7 +890,6 @@ Trả về DUY NHẤT một JSON hợp lệ:
 
         const response = await callGemini(contents, {
           responseMimeType: 'application/json',
-          temperature: 0.2,
         });
 
         if (response.text) {

@@ -95,7 +95,7 @@ export interface TrueFalseItem {
 export interface ExamQuestion {
   id: string;
   type: QuestionType;
-  partNumber?: 1 | 2 | 3; // 1: Trắc nghiệm 4 lựa chọn, 2: Trắc nghiệm Đúng/Sai, 3: Trả lời ngắn / Tự luận
+  partNumber?: 1 | 2 | 3 | 4; // 1: Trắc nghiệm 4 lựa chọn, 2: Trắc nghiệm Đúng/Sai, 3: Trả lời ngắn, 4: Tự luận
   sectionTitle?: string;
   content: string;
   stimulus?: {

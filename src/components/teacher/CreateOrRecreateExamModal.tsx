@@ -101,10 +101,7 @@ export const CreateOrRecreateExamModal: React.FC<CreateOrRecreateExamModalProps>
 
     try {
       const extracted = await extractTextFromFile(file);
-      let parsedStructure: ParsedMatrixResult | null = null;
-      if (extracted && extracted.trim().length > 0) {
-        parsedStructure = analyzeMatrixStructure(extracted, file.name);
-      }
+      const parsedStructure: ParsedMatrixResult = analyzeMatrixStructure(extracted || '', file.name);
 
       const reader = new FileReader();
       reader.onload = () => {

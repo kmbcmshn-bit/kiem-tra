@@ -973,7 +973,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ onBackToDashboard, onGoToHis
 
               {/* Part 3 Group */}
               <div className="flex items-center gap-1.5 bg-amber-50/70 p-1.5 rounded-xl border border-amber-200/60">
-                <span className="text-[11px] font-bold text-amber-800 px-1">Phần III (Tự luận / Trả lời ngắn):</span>
+                <span className="text-[11px] font-bold text-amber-800 px-1">
+                  {variant.questions.some(q => getQuestionPartInfo(q).partNumber === 4) ? 'Phần III (Trả lời ngắn):' : 'Phần III (Tự luận / Trả lời ngắn):'}
+                </span>
                 {variant.questions.map((q, idx) => {
                   const info = getQuestionPartInfo(q, idx);
                   if (info.partNumber !== 3) return null;
@@ -1001,6 +1003,39 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ onBackToDashboard, onGoToHis
                   );
                 })}
               </div>
+
+              {/* Part 4 Group (if present) */}
+              {variant.questions.some(q => getQuestionPartInfo(q).partNumber === 4) && (
+                <div className="flex items-center gap-1.5 bg-purple-50/70 p-1.5 rounded-xl border border-purple-200/60">
+                  <span className="text-[11px] font-bold text-purple-800 px-1">Phần IV (Tự luận):</span>
+                  {variant.questions.map((q, idx) => {
+                    const info = getQuestionPartInfo(q, idx);
+                    if (info.partNumber !== 4) return null;
+                    const isAnswered = answers[q.id]?.value !== undefined;
+                    const isSelected = selectedQuestionIndex === idx;
+                    return (
+                      <button
+                        key={q.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedQuestionIndex(idx);
+                          const el = document.getElementById(`question-card-${idx}`);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center justify-center cursor-pointer ${
+                          isSelected
+                            ? 'bg-purple-700 text-white shadow-xs ring-2 ring-purple-600/30 scale-105'
+                            : isAnswered
+                            ? 'bg-purple-200 text-purple-950 font-bold'
+                            : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {idx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1026,7 +1061,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ onBackToDashboard, onGoToHis
                           ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 border-emerald-300'
                           : partInfo.partNumber === 2
                           ? 'bg-gradient-to-r from-sky-50 via-indigo-50 to-slate-50 border-sky-300'
-                          : 'bg-gradient-to-r from-amber-50 via-orange-50 to-slate-50 border-amber-300'
+                          : partInfo.partNumber === 3
+                          ? 'bg-gradient-to-r from-amber-50 via-orange-50 to-slate-50 border-amber-300'
+                          : 'bg-gradient-to-r from-purple-50 via-indigo-50 to-slate-50 border-purple-300'
                       }`}
                     >
                       <div className="flex items-center gap-2 font-bold text-sm">
@@ -1036,7 +1073,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ onBackToDashboard, onGoToHis
                               ? 'bg-emerald-700'
                               : partInfo.partNumber === 2
                               ? 'bg-sky-700'
-                              : 'bg-amber-700'
+                              : partInfo.partNumber === 3
+                              ? 'bg-amber-700'
+                              : 'bg-purple-700'
                           }`}
                         >
                           {partInfo.partRoman}
@@ -1047,7 +1086,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({ onBackToDashboard, onGoToHis
                               ? 'text-emerald-950 font-extrabold'
                               : partInfo.partNumber === 2
                               ? 'text-sky-950 font-extrabold'
-                              : 'text-amber-950 font-extrabold'
+                              : partInfo.partNumber === 3
+                              ? 'text-amber-950 font-extrabold'
+                              : 'text-purple-950 font-extrabold'
                           }
                         >
                           {partInfo.partTitle}
